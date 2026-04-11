@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="ISDF Scout — Battlezone: Combat Commander unit database. Reconnaissance vehicle with dual mini-guns and FAF rocket." />
+  <meta name="theme-color" content="#f6a800" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Scout · ISDF Armory · F9bomber" />
+  <meta property="og:description" content="ISDF Scout reconnaissance vehicle — Battlezone: Combat Commander unit database." />
+  <meta property="og:image" content="img/BZ_Pilot_Avatar.png" />
+  <meta property="og:url" content="https://f9bomber.com/scout.html" />
+  <meta property="og:type" content="website" />
+
+  <title>Scout &middot; ISDF Armory &middot; F9bomber</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Bootstrap 5 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="css/style.css" />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/jpeg" href="img/isdf_pilot_logo_pandemic_yellow.jpg" />
+
+  <!-- Three.js import map (must precede any module scripts) -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three":          "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/":  "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+
+<body>
+
+  <!-- ══════════════════════════════════════════════
+       NAVBAR
+  ══════════════════════════════════════════════ -->
+  <nav class="navbar navbar-expand-lg">
+    <div class="container-xl">
+
+      <a class="navbar-brand" href="index.html">
+        <img src="img/isdf_pilot_logo_pandemic_yellow.jpg" alt="F9bomber logo" class="brand-icon" />
+        F9bomber
+      </a>
+
+      <button class="navbar-toggler" type="button"
+              data-bs-toggle="collapse" data-bs-target="#navbarMain"
+              aria-controls="navbarMain" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarMain">
+        <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
+          <li class="nav-item"><a class="nav-link" href="index.html#hero">Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="index.html#about">About</a></li>
+          <li class="nav-item"><a class="nav-link" href="index.html#socials">Socials</a></li>
+          <li class="nav-item"><a class="nav-link active" href="scout.html">Armory</a></li>
+        </ul>
+      </div>
+
+    </div>
+  </nav>
+
+
+  <!-- ══════════════════════════════════════════════
+       UNIT HEADER
+  ══════════════════════════════════════════════ -->
+  <section id="unit-header" class="scanline">
+    <div class="container-xl">
+      <div class="section-header" style="margin-bottom: 0;">
+        <p class="section-label">ISDF Armory</p>
+        <h1 class="section-title">Scout</h1>
+        <div class="section-divider"></div>
+        <p class="unit-subtitle">Reconnaissance Vehicle &bull; Light Armor</p>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════
+       3D VIEWER
+  ══════════════════════════════════════════════ -->
+  <section id="unit-viewer">
+    <div id="viewer-canvas-wrap">
+
+      <!-- Loading overlay -->
+      <div id="viewer-loading">
+        <div class="text-center">
+          <div class="viewer-spinner"></div>
+          <p class="viewer-loading-text" id="loading-text">Initializing Systems...</p>
+        </div>
+      </div>
+
+      <!-- Interaction hint -->
+      <div id="spin-hint">
+        <i class="bi bi-arrows-move"></i>&nbsp;
+        Drag to orbit &nbsp;&bull;&nbsp; Scroll to zoom &nbsp;&bull;&nbsp; Release to resume spin
+      </div>
+
+      <!-- Colour tint controls -->
+      <div id="viewer-colour-controls">
+        <span class="viewer-controls-label">Tint</span>
+        <button class="tint-swatch active" data-tint="#ffffff" style="background:#ffffff;" title="Default"></button>
+        <button class="tint-swatch" data-tint="#f6a800" style="background:#f6a800;" title="ISDF Amber"></button>
+        <button class="tint-swatch" data-tint="#4a7fc1" style="background:#4a7fc1;" title="ISDF Blue"></button>
+        <button class="tint-swatch" data-tint="#c0392b" style="background:#c0392b;" title="NSDF Red"></button>
+        <button class="tint-swatch" data-tint="#4a6741" style="background:#4a6741;" title="Tactical Green"></button>
+        <input type="color" id="tint-picker" value="#ffffff" title="Custom colour" />
+      </div>
+
+      <!-- Faction badge -->
+      <div class="viewer-badge">ISDF &middot; Scout</div>
+
+      <!-- Corner brackets -->
+      <div class="bracket-corner tl"></div>
+      <div class="bracket-corner tr"></div>
+      <div class="bracket-corner bl"></div>
+      <div class="bracket-corner br"></div>
+
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════
+       UNIT PROFILE
+  ══════════════════════════════════════════════ -->
+  <section id="unit-profile">
+    <div class="container-xl">
+
+      <div class="section-header">
+        <p class="section-label">Unit Database</p>
+        <h2 class="section-title">Combat Specifications</h2>
+        <div class="section-divider"></div>
+      </div>
+
+      <div class="row g-4 justify-content-center">
+
+        <!-- Classification / Stats Card -->
+        <div class="col-md-6 col-lg-5">
+          <div class="about-card">
+            <div class="bracket-corner tl"></div>
+            <div class="bracket-corner tr"></div>
+            <div class="bracket-corner bl"></div>
+            <div class="bracket-corner br"></div>
+
+            <p class="section-label mb-3">Armament &amp; Classification</p>
+
+            <div class="spec-row">
+              <span class="spec-key">Designation</span>
+              <span class="spec-val">ISDF Scout</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-key">Classification</span>
+              <span class="spec-val">Reconnaissance Vehicle</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-key">Speed Rating</span>
+              <span class="spec-val">2nd Fastest (ISDF)</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-key">Primary Weapon</span>
+              <span class="spec-val">Dual Mini-Guns</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-key">Secondary</span>
+              <span class="spec-val">FAF Rocket</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-key">Special Hardpoint</span>
+              <span class="spec-val">Empty (Configurable)</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-key">Radar Range</span>
+              <span class="spec-val">Excellent</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-key">Faction</span>
+              <span class="spec-val">ISDF</span>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Tactical Brief Card -->
+        <div class="col-md-6 col-lg-5">
+          <div class="about-card">
+            <div class="bracket-corner tl"></div>
+            <div class="bracket-corner tr"></div>
+            <div class="bracket-corner bl"></div>
+            <div class="bracket-corner br"></div>
+
+            <p class="section-label mb-3">Tactical Brief</p>
+
+            <p style="color: var(--text-muted); font-size: 0.92rem; margin-bottom: 1rem;">
+              The second fastest unit in the ISDF's standard armament, the Scout features dual
+              mini-guns and a FAF rocket as its standard loadout. A special hardpoint is available
+              but remains empty by default.
+            </p>
+
+            <p style="color: var(--text-muted); font-size: 0.92rem; margin-bottom: 0;">
+              Because of their great speed and excellent radar range, Scouts make ideal command
+              vehicles. Scouts automatically mark enemy units whenever they come into radar range,
+              providing an excellent warning and identification system.
+            </p>
+
+            <div class="tactical-callout">
+              <i class="bi bi-radar" style="color: var(--amber);"></i>&nbsp;
+              Auto-marks enemy units on radar contact &mdash; ideal for forward reconnaissance
+              and command operations.
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════
+       FOOTER
+  ══════════════════════════════════════════════ -->
+  <footer>
+    <div class="container">
+      <div class="footer-brand">F9bomber</div>
+      <div class="footer-links mb-2">
+        <a href="index.html">Home</a>
+        <a href="index.html#about">About</a>
+        <a href="scout.html">Armory</a>
+        <a href="https://www.youtube.com/@F9bomber" target="_blank" rel="noopener noreferrer">YouTube</a>
+        <a href="https://www.buymeacoffee.com/F9bomber" target="_blank" rel="noopener noreferrer">Support</a>
+      </div>
+      <p style="margin: 0;">
+        &copy; <span id="year"></span> F9bomber &mdash; All rights reserved.
+      </p>
+    </div>
+  </footer>
+
+
+  <!-- ── Scripts ── -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/main.js"></script>
+  <script type="module" src="js/scout-viewer.js"></script>
+  <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+
+</body>
+</html>

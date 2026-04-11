@@ -436,6 +436,221 @@ footer .footer-links a:hover {
 .text-amber { color: var(--amber); }
 .border-amber { border-color: var(--amber) !important; }
 
+/* ══════════════════════════════════════════════
+   UNIT / ARMORY PAGE
+══════════════════════════════════════════════ */
+
+/* Unit header */
+#unit-header {
+  padding: 3rem 0 2.2rem;
+  background: radial-gradient(ellipse at center top, rgba(246,168,0,0.07) 0%, transparent 55%);
+  border-bottom: 1px solid var(--border);
+}
+
+.unit-subtitle {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  margin-top: 0.65rem;
+  margin-bottom: 0;
+}
+
+/* 3D Viewer container */
+#unit-viewer {
+  padding: 0;
+  background: var(--black);
+  border-bottom: 1px solid var(--border);
+}
+
+#viewer-canvas-wrap {
+  position: relative;
+  width: 100%;
+  height: 65vh;
+  min-height: 420px;
+  background: var(--black);
+  overflow: hidden;
+}
+
+#viewer-canvas-wrap canvas {
+  display: block;
+}
+
+/* Loading overlay */
+#viewer-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--black);
+  z-index: 10;
+  transition: opacity 0.5s ease;
+}
+
+.viewer-spinner {
+  width: 36px;
+  height: 36px;
+  border: 2px solid var(--border);
+  border-top-color: var(--amber);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+.viewer-loading-text {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 3px;
+  color: var(--amber);
+  text-transform: uppercase;
+  text-align: center;
+}
+
+/* Interaction hint */
+#spin-hint {
+  position: absolute;
+  bottom: 1.2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Orbitron', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  background: rgba(10, 10, 10, 0.78);
+  padding: 0.4rem 1.1rem;
+  border: 1px solid var(--border);
+  pointer-events: none;
+  white-space: nowrap;
+  transition: opacity 0.5s ease;
+  z-index: 5;
+}
+
+/* Faction badge (top-right of viewer) */
+.viewer-badge {
+  position: absolute;
+  top: 1rem;
+  right: 1.5rem;
+  font-family: 'Orbitron', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 3px;
+  color: var(--amber);
+  text-transform: uppercase;
+  background: rgba(10, 10, 10, 0.78);
+  padding: 0.35rem 0.85rem;
+  border: 1px solid var(--border);
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* Unit profile section */
+#unit-profile {
+  padding: 5rem 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Spec table rows inside about-card */
+.spec-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(246, 168, 0, 0.1);
+  gap: 1rem;
+}
+.spec-row:last-child { border-bottom: none; }
+
+.spec-key {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 2px;
+  color: var(--amber);
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.spec-val {
+  font-size: 0.9rem;
+  color: var(--text);
+  text-align: right;
+}
+
+/* Tactical callout block */
+.tactical-callout {
+  background: var(--amber-glow);
+  border-left: 2px solid var(--amber);
+  padding: 0.75rem 1rem;
+  margin-top: 1.2rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* Colour tint controls */
+#viewer-colour-controls {
+  position: absolute;
+  top: 1rem;
+  left: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: rgba(10, 10, 10, 0.78);
+  border: 1px solid var(--border);
+  padding: 0.35rem 0.75rem;
+  pointer-events: all;
+  z-index: 5;
+}
+
+.viewer-controls-label {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 2px;
+  color: var(--amber);
+  text-transform: uppercase;
+  margin-right: 0.2rem;
+  white-space: nowrap;
+}
+
+.tint-swatch {
+  width: 18px;
+  height: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  cursor: pointer;
+  padding: 0;
+  transition: border-color 0.15s, transform 0.15s;
+  flex-shrink: 0;
+}
+
+.tint-swatch:hover  { border-color: #fff; transform: scale(1.15); }
+.tint-swatch.active { border-color: var(--amber); border-width: 2px; }
+
+#tint-picker {
+  width: 18px;
+  height: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  cursor: pointer;
+  padding: 0;
+  background: none;
+  flex-shrink: 0;
+}
+
+#tint-picker:hover { border-color: #fff; }
+
+/* ── Armory responsive overrides ── */
+@media (max-width: 767.98px) {
+  #viewer-canvas-wrap {
+    height: 52vh;
+    min-height: 300px;
+  }
+  #spin-hint    { font-size: 0.52rem; bottom: 0.8rem; padding: 0.3rem 0.75rem; }
+  .viewer-badge { display: none; }
+}
+
 /* Scanline effect (subtle) */
 .scanline {
   position: relative;
