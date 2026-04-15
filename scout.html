@@ -67,7 +67,7 @@
           <li class="nav-item"><a class="nav-link" href="index.html#hero">Home</a></li>
           <li class="nav-item"><a class="nav-link" href="index.html#about">About</a></li>
           <li class="nav-item"><a class="nav-link" href="index.html#socials">Socials</a></li>
-          <li class="nav-item"><a class="nav-link active" href="scout.html">Armory</a></li>
+          <li class="nav-item"><a class="nav-link nav-cta active" href="scout.html">Armory</a></li>
         </ul>
       </div>
 
@@ -110,15 +110,30 @@
         Drag to orbit &nbsp;&bull;&nbsp; Scroll to zoom &nbsp;&bull;&nbsp; Release to resume spin
       </div>
 
-      <!-- Colour tint controls -->
+      <!-- Colour controls -->
       <div id="viewer-colour-controls">
-        <span class="viewer-controls-label">Tint</span>
-        <button class="tint-swatch active" data-tint="#ffffff" style="background:#ffffff;" title="Default"></button>
-        <button class="tint-swatch" data-tint="#f6a800" style="background:#f6a800;" title="ISDF Amber"></button>
-        <button class="tint-swatch" data-tint="#4a7fc1" style="background:#4a7fc1;" title="ISDF Blue"></button>
-        <button class="tint-swatch" data-tint="#c0392b" style="background:#c0392b;" title="NSDF Red"></button>
-        <button class="tint-swatch" data-tint="#4a6741" style="background:#4a6741;" title="Tactical Green"></button>
-        <input type="color" id="tint-picker" value="#ffffff" title="Custom colour" />
+        <div class="viewer-ctrl-row">
+          <span class="viewer-controls-label">Color</span>
+          <button class="tint-swatch active" data-tint="default" title="Base texture">—</button>
+          <button class="tint-swatch" data-tint="#f6a800" style="background:#f6a800;" title="ISDF Amber"></button>
+          <button class="tint-swatch" data-tint="#4a7fc1" style="background:#4a7fc1;" title="ISDF Blue"></button>
+          <button class="tint-swatch" data-tint="#c0392b" style="background:#c0392b;" title="NSDF Red"></button>
+          <button class="tint-swatch" data-tint="#4a6741" style="background:#4a6741;" title="Tactical Green"></button>
+          <input type="color" id="tint-picker" value="#ffffff" title="Custom colour" />
+        </div>
+        <div class="viewer-ctrl-row" id="tint-rgba-row">
+          <span class="rgba-label">R</span><input class="rgba-input" id="tint-r" type="number" min="0" max="255" value="255" />
+          <span class="rgba-label">G</span><input class="rgba-input" id="tint-g" type="number" min="0" max="255" value="255" />
+          <span class="rgba-label">B</span><input class="rgba-input" id="tint-b" type="number" min="0" max="255" value="255" />
+          <span class="rgba-label">A</span><input class="rgba-input" id="tint-a" type="number" min="0" max="255" value="0" />
+        </div>
+      </div>
+
+      <!-- Day / Night slider -->
+      <div id="viewer-time-controls">
+        <i class="bi bi-moon-fill"></i>
+        <input type="range" id="time-slider" min="0" max="100" value="100" />
+        <i class="bi bi-sun-fill"></i>
       </div>
 
       <!-- Faction badge -->
