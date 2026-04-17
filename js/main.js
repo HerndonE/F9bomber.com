@@ -8,19 +8,20 @@
   const navLinks = document.querySelectorAll('.navbar-nav .nav-link[href^="#"]');
 
   function onScroll() {
-    const scrollY = window.scrollY + 80;
+    // Use getBoundingClientRect so the threshold is viewport-relative and
+    // works correctly regardless of flexbox/sticky layout.
+    // A section becomes "current" once its top edge scrolls within 130px of
+    // the viewport top (just below the sticky navbar). The last qualifying
+    // section wins, which keeps the last section active at the bottom of the page.
+    let currentId = null;
     sections.forEach(sec => {
-      const top = sec.offsetTop;
-      const height = sec.offsetHeight;
-      const id = sec.getAttribute('id');
-      const link = document.querySelector(`.navbar-nav .nav-link[href="#${id}"]`);
-      if (link) {
-        if (scrollY >= top && scrollY < top + height) {
-          navLinks.forEach(l => l.classList.remove('active'));
-          link.classList.add('active');
-        }
-      }
+      if (sec.getBoundingClientRect().top <= 130) currentId = sec.id;
     });
+    navLinks.forEach(l => l.classList.remove('active'));
+    if (currentId) {
+      const link = document.querySelector(`.navbar-nav .nav-link[href="#${currentId}"]`);
+      if (link) link.classList.add('active');
+    }
   }
 
   window.addEventListener('scroll', onScroll, { passive: true });
