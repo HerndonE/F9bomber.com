@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="ISDF Scout team colour configurator — preview Team A and Team B colors and export your LocalPrefs.ini settings for Battlezone: Combat Commander." />
+  <meta name="theme-color" content="#f6a800" />
+
+  <meta property="og:title" content="Team Colors · ISDF Scout · F9bomber" />
+  <meta property="og:description" content="Preview and export ISDF Scout team colors for Battlezone: Combat Commander." />
+  <meta property="og:image" content="img/BZ_Pilot_Avatar.png" />
+  <meta property="og:url" content="https://f9bomber.com/teamcolors.html" />
+  <meta property="og:type" content="website" />
+
+  <title>Team Colors &middot; ISDF Scout &middot; F9bomber</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" type="image/jpeg" href="img/isdf_pilot_logo_pandemic_yellow.jpg" />
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three":          "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/":  "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+
+<body>
+
+  <!-- ══════════════════════════════════════════════
+       NAVBAR
+  ══════════════════════════════════════════════ -->
+  <nav class="navbar navbar-expand-lg">
+    <div class="container-xl">
+      <a class="navbar-brand" href="index.html">
+        <img src="img/isdf_pilot_logo_pandemic_yellow.jpg" alt="F9bomber logo" class="brand-icon" />
+        F9bomber
+      </a>
+      <button class="navbar-toggler" type="button"
+              data-bs-toggle="collapse" data-bs-target="#navbarMain"
+              aria-controls="navbarMain" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarMain">
+        <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
+          <li class="nav-item"><a class="nav-link" href="index.html#hero">Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="index.html#about">About</a></li>
+          <li class="nav-item"><a class="nav-link" href="index.html#socials">Socials</a></li>
+          <li class="nav-item"><a class="nav-link nav-cta active" href="teamcolors.html">Team Colors</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+
+  <!-- ══════════════════════════════════════════════
+       HEADER
+  ══════════════════════════════════════════════ -->
+  <section id="tc-header" class="scanline">
+    <div class="container-xl">
+      <h1 class="section-title">Team Color Selector</h1>
+      <div class="section-divider"></div>
+      <p class="tc-subtitle">See and choose your team colors without launching Battlezone Combat Commander</p>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════
+       DUAL VIEWER
+  ══════════════════════════════════════════════ -->
+  <section id="tc-viewers">
+    <div class="container-xl">
+
+      <div class="tc-viewer-row">
+
+        <!-- ── Team A ── -->
+        <div class="tc-slot" id="viewer-a">
+          <p class="tc-team-label">Team A <span class="tc-team-range">— Teams 1–5</span></p>
+
+          <div class="viewer-canvas-wrap" data-ctrl="canvas-wrap">
+
+            <div class="viewer-loading" data-ctrl="loading">
+              <div class="text-center">
+                <div class="viewer-spinner"></div>
+                <p class="viewer-loading-text" data-ctrl="loading-text">Initializing Systems...</p>
+              </div>
+            </div>
+
+            <div class="spin-hint" data-ctrl="spin-hint">
+              <i class="bi bi-arrows-move"></i>&nbsp;Drag &bull; Scroll &bull; Release
+            </div>
+
+            <div class="viewer-grunge-controls" data-ctrl="grunge-wrap">
+              <i class="bi bi-layers-fill"></i>
+              <input type="range" data-ctrl="grunge-slider" min="1" max="4" step="0.05" value="1" />
+              <i class="bi bi-layers"></i>
+            </div>
+
+            <div class="viewer-time-controls" data-ctrl="time-wrap">
+              <i class="bi bi-moon-fill"></i>
+              <input type="range" data-ctrl="time-slider" min="0" max="100" value="100" />
+              <i class="bi bi-sun-fill"></i>
+            </div>
+
+            <div class="bracket-corner tl"></div>
+            <div class="bracket-corner tr"></div>
+            <div class="bracket-corner bl"></div>
+            <div class="bracket-corner br"></div>
+          </div>
+
+          <!-- Colour controls below viewer -->
+          <div class="tc-colour-controls">
+            <div class="tc-swatches">
+              <button class="tint-swatch" data-tint="default" title="No tint">—</button>
+              <button class="tint-swatch" data-tint="#ffffff" style="background:#ffffff;" title="White — 255 255 255"></button>
+              <button class="tint-swatch" data-tint="#dc143c" style="background:#dc143c;" title="Crimson — 220 20 60"></button>
+              <button class="tint-swatch" data-tint="#b40000" style="background:#b40000;" title="Dark Red — 180 0 0"></button>
+              <button class="tint-swatch" data-tint="#ff6400" style="background:#ff6400;" title="Orange — 255 100 0"></button>
+              <button class="tint-swatch" data-tint="#f6a800" style="background:#f6a800;" title="Amber — 246 168 0"></button>
+              <button class="tint-swatch" data-tint="#dcd200" style="background:#dcd200;" title="Yellow — 220 210 0"></button>
+              <button class="tint-swatch" data-tint="#008040" style="background:#008040;" title="Green — 0 128 64"></button>
+              <button class="tint-swatch" data-tint="#004080" style="background:#004080;" title="Navy — 0 64 128"></button>
+              <button class="tint-swatch" data-tint="#0080c8" style="background:#0080c8;" title="Steel Blue — 0 128 200"></button>
+              <button class="tint-swatch" data-tint="#00b4c8" style="background:#00b4c8;" title="Teal — 0 180 200"></button>
+              <button class="tint-swatch" data-tint="#800080" style="background:#800080;" title="Purple — 128 0 128"></button>
+              <button class="tint-swatch" data-tint="#dc0096" style="background:#dc0096;" title="Hot Pink — 220 0 150"></button>
+              <input type="color" data-ctrl="tint-picker" value="#dc143c" title="Custom colour" />
+            </div>
+            <div class="tc-rgba-row">
+              <span class="rgba-label">R</span><input class="rgba-input" data-ctrl="tint-r" type="number" min="0" max="255" value="220" />
+              <span class="rgba-label">G</span><input class="rgba-input" data-ctrl="tint-g" type="number" min="0" max="255" value="20" />
+              <span class="rgba-label">B</span><input class="rgba-input" data-ctrl="tint-b" type="number" min="0" max="255" value="60" />
+              <span class="rgba-label">A</span><input class="rgba-input" data-ctrl="tint-a" type="number" min="0" max="255" value="255" />
+            </div>
+          </div>
+        </div><!-- /viewer-a -->
+
+        <!-- ── Team B ── -->
+        <div class="tc-slot" id="viewer-b">
+          <p class="tc-team-label">Team B <span class="tc-team-range">— Teams 6–10</span></p>
+
+          <div class="viewer-canvas-wrap" data-ctrl="canvas-wrap">
+
+            <div class="viewer-loading" data-ctrl="loading">
+              <div class="text-center">
+                <div class="viewer-spinner"></div>
+                <p class="viewer-loading-text" data-ctrl="loading-text">Initializing Systems...</p>
+              </div>
+            </div>
+
+            <div class="spin-hint" data-ctrl="spin-hint">
+              <i class="bi bi-arrows-move"></i>&nbsp;Drag &bull; Scroll &bull; Release
+            </div>
+
+            <div class="viewer-grunge-controls" data-ctrl="grunge-wrap">
+              <i class="bi bi-layers-fill"></i>
+              <input type="range" data-ctrl="grunge-slider" min="1" max="4" step="0.05" value="1" />
+              <i class="bi bi-layers"></i>
+            </div>
+
+            <div class="viewer-time-controls" data-ctrl="time-wrap">
+              <i class="bi bi-moon-fill"></i>
+              <input type="range" data-ctrl="time-slider" min="0" max="100" value="100" />
+              <i class="bi bi-sun-fill"></i>
+            </div>
+
+            <div class="bracket-corner tl"></div>
+            <div class="bracket-corner tr"></div>
+            <div class="bracket-corner bl"></div>
+            <div class="bracket-corner br"></div>
+          </div>
+
+          <!-- Colour controls below viewer -->
+          <div class="tc-colour-controls">
+            <div class="tc-swatches">
+              <button class="tint-swatch" data-tint="default" title="No tint">—</button>
+              <button class="tint-swatch" data-tint="#ffffff" style="background:#ffffff;" title="White — 255 255 255"></button>
+              <button class="tint-swatch" data-tint="#dc143c" style="background:#dc143c;" title="Crimson — 220 20 60"></button>
+              <button class="tint-swatch" data-tint="#b40000" style="background:#b40000;" title="Dark Red — 180 0 0"></button>
+              <button class="tint-swatch" data-tint="#ff6400" style="background:#ff6400;" title="Orange — 255 100 0"></button>
+              <button class="tint-swatch" data-tint="#f6a800" style="background:#f6a800;" title="Amber — 246 168 0"></button>
+              <button class="tint-swatch" data-tint="#dcd200" style="background:#dcd200;" title="Yellow — 220 210 0"></button>
+              <button class="tint-swatch" data-tint="#008040" style="background:#008040;" title="Green — 0 128 64"></button>
+              <button class="tint-swatch" data-tint="#004080" style="background:#004080;" title="Navy — 0 64 128"></button>
+              <button class="tint-swatch" data-tint="#0080c8" style="background:#0080c8;" title="Steel Blue — 0 128 200"></button>
+              <button class="tint-swatch" data-tint="#00b4c8" style="background:#00b4c8;" title="Teal — 0 180 200"></button>
+              <button class="tint-swatch" data-tint="#800080" style="background:#800080;" title="Purple — 128 0 128"></button>
+              <button class="tint-swatch" data-tint="#dc0096" style="background:#dc0096;" title="Hot Pink — 220 0 150"></button>
+              <input type="color" data-ctrl="tint-picker" value="#004080" title="Custom colour" />
+            </div>
+            <div class="tc-rgba-row">
+              <span class="rgba-label">R</span><input class="rgba-input" data-ctrl="tint-r" type="number" min="0" max="255" value="0" />
+              <span class="rgba-label">G</span><input class="rgba-input" data-ctrl="tint-g" type="number" min="0" max="255" value="64" />
+              <span class="rgba-label">B</span><input class="rgba-input" data-ctrl="tint-b" type="number" min="0" max="255" value="128" />
+              <span class="rgba-label">A</span><input class="rgba-input" data-ctrl="tint-a" type="number" min="0" max="255" value="255" />
+            </div>
+          </div>
+        </div><!-- /viewer-b -->
+
+      </div><!-- /tc-viewer-row -->
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════
+       LOCALPREFS OUTPUT
+  ══════════════════════════════════════════════ -->
+  <section id="tc-output">
+    <div class="container-xl">
+      <div class="tc-output-card">
+        <div class="bracket-corner tl"></div>
+        <div class="bracket-corner tr"></div>
+        <div class="bracket-corner bl"></div>
+        <div class="bracket-corner br"></div>
+
+        <div class="tc-output-header">
+          <p class="section-label">LocalPrefs.ini</p>
+          <button id="copy-btn" class="tc-copy-btn">
+            <i class="bi bi-clipboard"></i> Copy
+          </button>
+        </div>
+
+        <pre id="localprefs-output" class="tc-output-pre">TeamColorTeamA = "220 20 60 255"
+TeamColorTeamB = "0 64 128 255"</pre>
+
+        <div class="tc-instructions">
+          <p class="section-label mb-2">How to apply</p>
+          <ol class="tc-steps">
+            <li>Find your <code>LocalPrefs.ini</code> at:<br>
+                <code>…\steamapps\common\BZ2R\bz2r_res\config\LocalPrefs.ini</code></li>
+            <li>Copy it to your addon config folder:<br>
+                <code>Documents\My Games\Battlezone Combat Commander\</code><br>
+                Create an <code>addon</code> subfolder if it doesn't exist, then place the file inside it.</li>
+            <li>Paste the two lines above into <code>LocalPrefs.ini</code>, replacing any existing <code>TeamColorTeam</code> entries.</li>
+            <li>Launch the game — your team colors will be active.</li>
+          </ol>
+        </div>
+
+        <div class="tc-workshop">
+          <p class="section-label mb-2">Steam Workshop</p>
+          <p class="tc-workshop-desc">Subscribe to F9bomber's Color Selector mods to enable custom team colors in-game:</p>
+          <div class="tc-workshop-links">
+            <a href="https://steamcommunity.com/sharedfiles/filedetails/?id=1851090665"
+               target="_blank" rel="noopener noreferrer" class="tc-workshop-link">
+              <i class="bi bi-steam"></i> Color Selector (Config)
+              <i class="bi bi-arrow-up-right tc-workshop-arrow"></i>
+            </a>
+            <a href="https://steamcommunity.com/sharedfiles/filedetails/?id=1851404655"
+               target="_blank" rel="noopener noreferrer" class="tc-workshop-link">
+              <i class="bi bi-steam"></i> Color Selector (Asset)
+              <i class="bi bi-arrow-up-right tc-workshop-arrow"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════
+       FOOTER
+  ══════════════════════════════════════════════ -->
+  <footer>
+    <div class="container">
+      <div class="footer-brand">F9bomber</div>
+      <div class="footer-links mb-2">
+        <a href="index.html">Home</a>
+        <a href="index.html#about">About</a>
+        <a href="https://www.youtube.com/@F9bomber" target="_blank" rel="noopener noreferrer">YouTube</a>
+        <a href="https://www.buymeacoffee.com/F9bomber" target="_blank" rel="noopener noreferrer">Support</a>
+      </div>
+      <p style="margin:0;">&copy; <span id="year"></span> F9bomber &mdash; All rights reserved.</p>
+    </div>
+  </footer>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/main.js"></script>
+  <script type="module" src="js/teamcolors.js"></script>
+  <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+
+</body>
+</html>
