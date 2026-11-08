@@ -19,7 +19,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/style.css?v=20261108c" />
   <link rel="icon" type="image/jpeg" href="img/isdf_pilot_logo_pandemic_yellow.jpg" />
 
   <script type="importmap">
@@ -68,6 +68,10 @@
       <h1 class="section-title">Team Color Selector</h1>
       <div class="section-divider"></div>
       <p class="tc-subtitle">See and choose your team colors without launching Battlezone Combat Commander</p>
+      <p class="tc-legend">
+        <span class="tc-origin-tag">Stock</span> ISDF and Scion ship with the game.
+        <span class="tc-mod-tag">Mod</span> Expanded-universe factions, like the Hadeans, come from community mods.
+      </p>
     </div>
   </section>
 
@@ -82,7 +86,15 @@
 
         <!-- ── Team A ── -->
         <div class="tc-slot" id="viewer-a">
-          <p class="tc-team-label">Team A <span class="tc-team-range">— Teams 1–5</span></p>
+          <div class="tc-slot-head">
+            <img class="tc-faction-logo" data-ctrl="faction-logo" src="img/Factions/ISDF-Logo.png" alt="ISDF logo" width="44" height="44" />
+            <div class="tc-slot-title">
+              <p class="tc-team-label">Team A <span class="tc-team-range">— Teams 1–5</span></p>
+              <p class="tc-unit-name"><span data-ctrl="unit-name">ISDF Scout</span><span class="tc-origin-tag" data-ctrl="unit-origin">Stock</span></p>
+            </div>
+            <div class="tc-unit-switch" data-ctrl="unit-switch" role="group" aria-label="Team A unit"></div>
+          </div>
+          <div class="tc-origin-note" data-ctrl="origin-note" hidden></div>
 
           <div class="viewer-canvas-wrap" data-ctrl="canvas-wrap">
 
@@ -94,20 +106,24 @@
             </div>
 
             <div class="spin-hint" data-ctrl="spin-hint">
-              <i class="bi bi-arrows-move"></i>&nbsp;Drag &bull; Scroll &bull; Release
+              <i class="bi bi-arrows-move"></i>&nbsp;Drag to rotate &bull; Scroll to zoom
             </div>
 
-            <div class="viewer-grunge-controls" data-ctrl="grunge-wrap">
-              <i class="bi bi-layers-fill"></i>
-              <input type="range" data-ctrl="grunge-slider" min="1" max="4" step="0.05" value="1" />
-              <i class="bi bi-layers"></i>
+            <button type="button" class="viewer-spin-btn" data-ctrl="spin-toggle" aria-pressed="false" title="Spin the model">
+              <i class="bi bi-arrow-repeat"></i>Spin <span class="viewer-spin-state">Off</span>
+            </button>
+
+            <div class="viewer-actions">
+              <button type="button" class="viewer-panel-btn" data-ctrl="panel-toggle" aria-pressed="false"
+                      title="Hide the color panel for a full-screen view">
+                <i class="bi bi-layout-sidebar-inset-reverse"></i><span class="viewer-panel-label">Hide panel</span>
+              </button>
+              <button type="button" class="viewer-fs-btn" data-ctrl="fullscreen" hidden
+                      aria-label="Full screen" title="Full screen — adjust colors with a bigger view">
+                <i class="bi bi-arrows-fullscreen"></i><span class="viewer-fs-label">Full screen</span>
+              </button>
             </div>
 
-            <div class="viewer-time-controls" data-ctrl="time-wrap">
-              <i class="bi bi-moon-fill"></i>
-              <input type="range" data-ctrl="time-slider" min="0" max="100" value="100" />
-              <i class="bi bi-sun-fill"></i>
-            </div>
 
             <div class="bracket-corner tl"></div>
             <div class="bracket-corner tr"></div>
@@ -115,10 +131,38 @@
             <div class="bracket-corner br"></div>
           </div>
 
-          <!-- Colour controls below viewer -->
+          <!-- Preview controls: affect the viewer only, not the export -->
+          <div class="tc-view-controls">
+            <label class="tc-slider">
+              <span class="tc-slider-name"><i class="bi bi-layers-half"></i> Grunge</span>
+              <span class="tc-slider-end">Clean</span>
+              <input type="range" data-ctrl="grunge-slider" min="1" max="4" step="0.05" value="1" aria-label="Grunge: how weathered the team paint looks" />
+              <span class="tc-slider-end">Worn</span>
+              <output class="tc-slider-val" data-readout="grunge-slider">Off</output>
+            </label>
+            <label class="tc-slider">
+              <span class="tc-slider-name"><i class="bi bi-brightness-high"></i> Lighting</span>
+              <span class="tc-slider-end">Night</span>
+              <input type="range" data-ctrl="time-slider" min="0" max="100" value="100" aria-label="Lighting: time of day" />
+              <span class="tc-slider-end">Day</span>
+              <output class="tc-slider-val" data-readout="time-slider">Day</output>
+            </label>
+            <p class="tc-hint"><i class="bi bi-eye"></i> Preview only. Grunge shows how weathered the team paint looks; neither slider changes your exported colors.</p>
+          </div>
+
+          <!-- Paint: stock colors or a team color -->
           <div class="tc-colour-controls">
+            <div class="tc-paint-head">
+              <span class="tc-control-title">Paint</span>
+              <div class="tc-mode" role="group" aria-label="Paint mode">
+                <button type="button" class="tc-mode-btn" data-mode="stock"><i class="bi bi-shield-fill"></i> Stock colors</button>
+                <button type="button" class="tc-mode-btn" data-mode="team"><i class="bi bi-palette-fill"></i> Team color</button>
+              </div>
+            </div>
+            <p class="tc-paint-status" data-ctrl="tint-status" aria-live="polite"></p>
+
+            <p class="tc-sub-label">Presets</p>
             <div class="tc-swatches">
-              <button class="tint-swatch" data-tint="default" title="No tint">—</button>
               <button class="tint-swatch" data-tint="#ffffff" style="background:#ffffff;" title="White — 255 255 255"></button>
               <button class="tint-swatch" data-tint="#dc143c" style="background:#dc143c;" title="Crimson — 220 20 60"></button>
               <button class="tint-swatch" data-tint="#b40000" style="background:#b40000;" title="Dark Red — 180 0 0"></button>
@@ -131,8 +175,13 @@
               <button class="tint-swatch" data-tint="#00b4c8" style="background:#00b4c8;" title="Teal — 0 180 200"></button>
               <button class="tint-swatch" data-tint="#800080" style="background:#800080;" title="Purple — 128 0 128"></button>
               <button class="tint-swatch" data-tint="#dc0096" style="background:#dc0096;" title="Hot Pink — 220 0 150"></button>
-              <input type="color" data-ctrl="tint-picker" value="#dc143c" title="Custom colour" />
+              <label class="tc-custom-pick" title="Pick any color">
+                <input type="color" data-ctrl="tint-picker" value="#dc143c" />
+                <span>Custom</span>
+              </label>
             </div>
+
+            <p class="tc-sub-label">Fine-tune <span class="tc-sub-note">0–255 · A = strength (0 = stock, 255 = full)</span></p>
             <div class="tc-rgba-row">
               <span class="rgba-label">R</span><input class="rgba-input" data-ctrl="tint-r" type="number" min="0" max="255" value="220" />
               <span class="rgba-label">G</span><input class="rgba-input" data-ctrl="tint-g" type="number" min="0" max="255" value="20" />
@@ -144,7 +193,15 @@
 
         <!-- ── Team B ── -->
         <div class="tc-slot" id="viewer-b">
-          <p class="tc-team-label">Team B <span class="tc-team-range">— Teams 6–10</span></p>
+          <div class="tc-slot-head">
+            <img class="tc-faction-logo" data-ctrl="faction-logo" src="img/Factions/ISDF-Logo.png" alt="ISDF logo" width="44" height="44" />
+            <div class="tc-slot-title">
+              <p class="tc-team-label">Team B <span class="tc-team-range">— Teams 6–10</span></p>
+              <p class="tc-unit-name"><span data-ctrl="unit-name">ISDF Scout</span><span class="tc-origin-tag" data-ctrl="unit-origin">Stock</span></p>
+            </div>
+            <div class="tc-unit-switch" data-ctrl="unit-switch" role="group" aria-label="Team B unit"></div>
+          </div>
+          <div class="tc-origin-note" data-ctrl="origin-note" hidden></div>
 
           <div class="viewer-canvas-wrap" data-ctrl="canvas-wrap">
 
@@ -156,20 +213,24 @@
             </div>
 
             <div class="spin-hint" data-ctrl="spin-hint">
-              <i class="bi bi-arrows-move"></i>&nbsp;Drag &bull; Scroll &bull; Release
+              <i class="bi bi-arrows-move"></i>&nbsp;Drag to rotate &bull; Scroll to zoom
             </div>
 
-            <div class="viewer-grunge-controls" data-ctrl="grunge-wrap">
-              <i class="bi bi-layers-fill"></i>
-              <input type="range" data-ctrl="grunge-slider" min="1" max="4" step="0.05" value="1" />
-              <i class="bi bi-layers"></i>
+            <button type="button" class="viewer-spin-btn" data-ctrl="spin-toggle" aria-pressed="false" title="Spin the model">
+              <i class="bi bi-arrow-repeat"></i>Spin <span class="viewer-spin-state">Off</span>
+            </button>
+
+            <div class="viewer-actions">
+              <button type="button" class="viewer-panel-btn" data-ctrl="panel-toggle" aria-pressed="false"
+                      title="Hide the color panel for a full-screen view">
+                <i class="bi bi-layout-sidebar-inset-reverse"></i><span class="viewer-panel-label">Hide panel</span>
+              </button>
+              <button type="button" class="viewer-fs-btn" data-ctrl="fullscreen" hidden
+                      aria-label="Full screen" title="Full screen — adjust colors with a bigger view">
+                <i class="bi bi-arrows-fullscreen"></i><span class="viewer-fs-label">Full screen</span>
+              </button>
             </div>
 
-            <div class="viewer-time-controls" data-ctrl="time-wrap">
-              <i class="bi bi-moon-fill"></i>
-              <input type="range" data-ctrl="time-slider" min="0" max="100" value="100" />
-              <i class="bi bi-sun-fill"></i>
-            </div>
 
             <div class="bracket-corner tl"></div>
             <div class="bracket-corner tr"></div>
@@ -177,10 +238,38 @@
             <div class="bracket-corner br"></div>
           </div>
 
-          <!-- Colour controls below viewer -->
+          <!-- Preview controls: affect the viewer only, not the export -->
+          <div class="tc-view-controls">
+            <label class="tc-slider">
+              <span class="tc-slider-name"><i class="bi bi-layers-half"></i> Grunge</span>
+              <span class="tc-slider-end">Clean</span>
+              <input type="range" data-ctrl="grunge-slider" min="1" max="4" step="0.05" value="1" aria-label="Grunge: how weathered the team paint looks" />
+              <span class="tc-slider-end">Worn</span>
+              <output class="tc-slider-val" data-readout="grunge-slider">Off</output>
+            </label>
+            <label class="tc-slider">
+              <span class="tc-slider-name"><i class="bi bi-brightness-high"></i> Lighting</span>
+              <span class="tc-slider-end">Night</span>
+              <input type="range" data-ctrl="time-slider" min="0" max="100" value="100" aria-label="Lighting: time of day" />
+              <span class="tc-slider-end">Day</span>
+              <output class="tc-slider-val" data-readout="time-slider">Day</output>
+            </label>
+            <p class="tc-hint"><i class="bi bi-eye"></i> Preview only. Grunge shows how weathered the team paint looks; neither slider changes your exported colors.</p>
+          </div>
+
+          <!-- Paint: stock colors or a team color -->
           <div class="tc-colour-controls">
+            <div class="tc-paint-head">
+              <span class="tc-control-title">Paint</span>
+              <div class="tc-mode" role="group" aria-label="Paint mode">
+                <button type="button" class="tc-mode-btn" data-mode="stock"><i class="bi bi-shield-fill"></i> Stock colors</button>
+                <button type="button" class="tc-mode-btn" data-mode="team"><i class="bi bi-palette-fill"></i> Team color</button>
+              </div>
+            </div>
+            <p class="tc-paint-status" data-ctrl="tint-status" aria-live="polite"></p>
+
+            <p class="tc-sub-label">Presets</p>
             <div class="tc-swatches">
-              <button class="tint-swatch" data-tint="default" title="No tint">—</button>
               <button class="tint-swatch" data-tint="#ffffff" style="background:#ffffff;" title="White — 255 255 255"></button>
               <button class="tint-swatch" data-tint="#dc143c" style="background:#dc143c;" title="Crimson — 220 20 60"></button>
               <button class="tint-swatch" data-tint="#b40000" style="background:#b40000;" title="Dark Red — 180 0 0"></button>
@@ -193,8 +282,13 @@
               <button class="tint-swatch" data-tint="#00b4c8" style="background:#00b4c8;" title="Teal — 0 180 200"></button>
               <button class="tint-swatch" data-tint="#800080" style="background:#800080;" title="Purple — 128 0 128"></button>
               <button class="tint-swatch" data-tint="#dc0096" style="background:#dc0096;" title="Hot Pink — 220 0 150"></button>
-              <input type="color" data-ctrl="tint-picker" value="#004080" title="Custom colour" />
+              <label class="tc-custom-pick" title="Pick any color">
+                <input type="color" data-ctrl="tint-picker" value="#004080" />
+                <span>Custom</span>
+              </label>
             </div>
+
+            <p class="tc-sub-label">Fine-tune <span class="tc-sub-note">0–255 · A = strength (0 = stock, 255 = full)</span></p>
             <div class="tc-rgba-row">
               <span class="rgba-label">R</span><input class="rgba-input" data-ctrl="tint-r" type="number" min="0" max="255" value="0" />
               <span class="rgba-label">G</span><input class="rgba-input" data-ctrl="tint-g" type="number" min="0" max="255" value="64" />
@@ -283,7 +377,7 @@ TeamColorTeamB = "0 64 128 255"</pre>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="js/main.js"></script>
-  <script type="module" src="js/teamcolors.js"></script>
+  <script type="module" src="js/teamcolors.js?v=20261108c"></script>
   <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
 
 </body>

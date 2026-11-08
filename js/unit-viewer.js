@@ -4,14 +4,26 @@
  * Each call to initViewer() creates a completely independent viewer
  * with its own renderer, scene, camera, and colour state.
  *
- * Config:
+ * Config (viewer):
  *   containerId       — ID of the wrapper element that owns this viewer
+ *   defaultTint       — { hex, alpha } applied on load
+ *   onTintChange      — callback(r, g, b, a) fired after every colour change
+ *   ...plus the unit options below for the initial unit.
+ *
+ * Unit options (initial config, or setUnit(unit) to swap models at runtime):
  *   model             — path to .fbx
  *   textures          — { diffuse, colorMask, normal, specular, emissive }
  *   mirror            — true: per-fragment UV mirror correction via dFdx
- *   defaultTint       — { hex, alpha } applied on load
+ *   wrap              — 'repeat': RepeatWrapping on all maps (for UVs outside 0–1)
+ *   rotationX         — model X rotation in radians (default -PI/2)
+ *   hideMeshes        — RegExp of node names to hide (hardpoints, flames…)
+ *   doubleSided       — array of mesh names rendered double-sided
+ *   glassMeshes       — array of mesh names given a tinted glass material
+ *   metalness         — PBR metalness (default 0)
+ *   roughness         — PBR roughness (default 0.75)
+ *   useSpecular       — true: wire textures.specular in as a specular colour map
  *   emissiveIntensity — overrides the default 0.15
- *   onTintChange      — callback(r, g, b, a) fired after every colour change
+ *   viewAzimuth       — starting camera angle in degrees (default 35)
  *
  * Shader blend: diffuseColor.rgb = mix(base, _c.rgb * uTintColor, _c.a * uTintAlpha)
  *   uTintAlpha 0  →  base texture only
@@ -27,10 +39,22 @@ export function initViewer(config) {
 
   /* ── Instance state ─────────────────────────────────────────── */
   let renderer, scene, camera, controls;
-  let sharedMaterial = null;
+  let currentModel = null;
+  let loadToken    = 0;
+  let spinOn       = false;
   const clock     = new THREE.Clock();
   const lights    = {};
-  const tintState = { hex: '#ffffff', alpha: 0 };
+  // alpha 0 = stock paint; lastAlpha remembers the strength to restore
+  const tintState = { hex: '#ffffff', alpha: 0, lastAlpha: 255, initialised: false };
+
+  // Tint uniforms are shared objects so every material built for a unit
+  // (single- and double-sided variants) stays in sync, and a shader that
+  // compiles after the tint was set still picks up the current value.
+  const tintUniforms = {
+    uTintColor:   { value: new THREE.Vector3(1, 1, 1) },
+    uTintAlpha:   { value: 0.0 },
+    uGrungeBoost: { value: 1.0 },
+  };
 
   /* ── DOM helpers — all queries scoped to the container ─────── */
   const _container = () => document.getElementById(config.containerId);
@@ -88,22 +112,113 @@ export function initViewer(config) {
     controls.enablePan       = false;
     controls.minDistance     = 40;
     controls.maxDistance     = 2000;
-    controls.autoRotate      = true;
+    // Models load still; the Spin toggle turns auto-rotation on
+    controls.autoRotate      = false;
     controls.autoRotateSpeed = -2.0;
 
     controls.addEventListener('start', () => {
-      controls.autoRotate = false;
+      controls.autoRotate = false;          // pause while the user drags
       const hint = _q('[data-ctrl="spin-hint"]');
       if (hint) hint.style.opacity = '0';
     });
-    controls.addEventListener('end', () => { controls.autoRotate = true; });
+    controls.addEventListener('end', () => { controls.autoRotate = spinOn; });
 
     // Defer the first measurement to after the browser has completed its
     // first layout pass — prevents reading stale column widths in grid/flex.
     requestAnimationFrame(_syncViewport);
     new ResizeObserver(_syncViewport).observe(wrap);
-    _loadAssets();
+    _initFullscreen();
+    _initSpinToggle();
+    _loadAssets(config);
     _animate();
+  }
+
+  /* ── Spin toggle ──────────────────────────────────────────────── */
+  function _initSpinToggle() {
+    const btn = _q('[data-ctrl="spin-toggle"]');
+    if (!btn) return;
+    const sync = () => {
+      btn.classList.toggle('active', spinOn);
+      btn.setAttribute('aria-pressed', String(spinOn));
+      btn.querySelector('.viewer-spin-state').textContent = spinOn ? 'On' : 'Off';
+      btn.title = spinOn ? 'Stop spinning' : 'Spin the model';
+    };
+    btn.addEventListener('click', () => {
+      spinOn = !spinOn;
+      controls.autoRotate = spinOn;
+      sync();
+    });
+    sync();
+  }
+
+  /* ── Full screen (desktop) ──────────────────────────────────────
+     The whole team panel (.tc-slot) goes full screen so the colour
+     controls stay usable beside the enlarged view. The canvas resizes
+     through the ResizeObserver on the canvas wrap. */
+  function _initFullscreen() {
+    const btn  = _q('[data-ctrl="fullscreen"]');
+    const slot = _container();
+    if (!btn || !slot) return;
+    const request = slot.requestFullscreen || slot.webkitRequestFullscreen;
+    const exit    = document.exitFullscreen || document.webkitExitFullscreen;
+    const enabled = document.fullscreenEnabled || document.webkitFullscreenEnabled;
+    if (!request || !enabled) return;           // leave the button hidden
+    btn.hidden = false;
+
+    const current = () => document.fullscreenElement || document.webkitFullscreenElement;
+
+    // Hide / show the controls column while in full screen
+    const panelBtn = _q('[data-ctrl="panel-toggle"]');
+    const setPanelHidden = (hide) => {
+      slot.classList.toggle('panel-hidden', hide);
+      if (panelBtn) {
+        panelBtn.setAttribute('aria-pressed', String(hide));
+        panelBtn.querySelector('.viewer-panel-label').textContent = hide ? 'Show panel' : 'Hide panel';
+        panelBtn.querySelector('i').className = hide ? 'bi bi-layout-sidebar-inset' : 'bi bi-layout-sidebar-inset-reverse';
+        panelBtn.title = hide ? 'Show the color panel' : 'Hide the color panel for a full-screen view';
+      }
+      requestAnimationFrame(_syncViewport);
+    };
+    panelBtn?.addEventListener('click', () => setPanelHidden(!slot.classList.contains('panel-hidden')));
+
+    // In full screen, fade the overlay buttons out after a moment without
+    // input (like a video player); any movement, click, scroll or key wakes them.
+    const IDLE_MS = 2500;
+    let idleTimer = null;
+    const goIdle = () => {
+      // Stay visible while the pointer rests on, or keyboard focus is in, a button
+      if (slot.querySelector('.viewer-actions:hover, .viewer-spin-btn:hover, .viewer-canvas-wrap button:focus-visible')) {
+        idleTimer = setTimeout(goIdle, IDLE_MS);
+        return;
+      }
+      slot.classList.add('controls-idle');
+    };
+    const wake = () => {
+      clearTimeout(idleTimer);
+      slot.classList.remove('controls-idle');
+      if (slot.classList.contains('is-fullscreen')) idleTimer = setTimeout(goIdle, IDLE_MS);
+    };
+    ['pointermove', 'pointerdown', 'wheel', 'keydown', 'touchstart'].forEach((type) =>
+      slot.addEventListener(type, wake, { passive: true }));
+
+    btn.addEventListener('click', () => {
+      if (current() === slot) exit.call(document);
+      else Promise.resolve(request.call(slot)).catch((err) => console.warn('unit-viewer: fullscreen failed', err));
+    });
+
+    const sync = () => {
+      const on = current() === slot;
+      slot.classList.toggle('is-fullscreen', on);
+      if (!on) setPanelHidden(false);          // always restore the panel on exit
+      wake();                                  // starts the idle timer only in full screen
+      btn.setAttribute('aria-label', on ? 'Exit full screen' : 'Full screen');
+      btn.title = on ? 'Exit full screen (Esc)' : 'Full screen — adjust colors with a bigger view';
+      btn.querySelector('i').className = on ? 'bi bi-fullscreen-exit' : 'bi bi-arrows-fullscreen';
+      btn.querySelector('.viewer-fs-label').textContent = on ? 'Exit' : 'Full screen';
+      requestAnimationFrame(_syncViewport);
+    };
+    document.addEventListener('fullscreenchange', sync);
+    document.addEventListener('webkitfullscreenchange', sync);
   }
 
   /* ── Viewport sync ──────────────────────────────────────────── */
@@ -115,104 +230,211 @@ export function initViewer(config) {
   }
 
   /* ── Asset loading ──────────────────────────────────────────── */
-  function _loadAssets() {
+  function _loadAssets(unit) {
+    const token  = ++loadToken;   // a newer request supersedes this one
+    const tl     = new THREE.TextureLoader();
+    const tex    = unit.textures || {};
+    const repeat = unit.wrap === 'repeat';
+    _showLoading(true);
     _setStatus('Initializing Systems...');
-    const tl  = new THREE.TextureLoader();
-    const tex = config.textures || {};
 
-    Promise.all([
-      _loadTex(tl, tex.diffuse,   true),
-      _loadTex(tl, tex.colorMask, false),
-      _loadTex(tl, tex.normal,    false),
-      _loadTex(tl, tex.specular,  false),
-      _loadTex(tl, tex.emissive,  true),
-    ]).then(([diffuse, colorMask, normal, specular, emissive]) => {
+    return Promise.all([
+      _loadTex(tl, tex.diffuse,   true,  repeat),
+      _loadTex(tl, tex.colorMask, false, repeat),
+      _loadTex(tl, tex.normal,    false, repeat),
+      _loadTex(tl, tex.specular,  false, repeat),
+      _loadTex(tl, tex.emissive,  true,  repeat),
+    ]).then(([diffuse, colorMask, normal, specular, emissive]) => new Promise((resolve) => {
+      if (token !== loadToken) return resolve();
       _setStatus('Loading Model...');
       new FBXLoader().load(
-        config.model,
-        (fbx) => _onLoaded(fbx, { diffuse, colorMask, normal, specular, emissive }),
-        (xhr) => { if (xhr.total > 0) _setStatus(`Loading — ${Math.round(xhr.loaded / xhr.total * 100)}%`); },
-        (err) => { console.error(err); _setStatus('Failed to load model.'); }
+        unit.model,
+        (fbx) => {
+          if (token === loadToken) _onLoaded(fbx, unit, { diffuse, colorMask, normal, specular, emissive });
+          resolve();
+        },
+        (xhr) => {
+          if (xhr.total > 0 && token === loadToken) _setStatus(`Loading — ${Math.round(xhr.loaded / xhr.total * 100)}%`);
+        },
+        (err) => { console.error(err); _setStatus('Failed to load model.'); resolve(); }
       );
-    }).catch((err) => { console.error(err); _setStatus('Failed to load textures.'); });
+    })).catch((err) => { console.error(err); _setStatus('Failed to load textures.'); });
   }
 
-  function _loadTex(loader, url, isSRGB) {
+  function _loadTex(loader, url, isSRGB, repeat) {
     if (!url) return Promise.resolve(null);
     return new Promise((resolve) => {
       loader.load(
         url,
-        (tex) => { tex.colorSpace = isSRGB ? THREE.SRGBColorSpace : THREE.LinearSRGBColorSpace; resolve(tex); },
+        (tex) => {
+          tex.colorSpace = isSRGB ? THREE.SRGBColorSpace : THREE.LinearSRGBColorSpace;
+          if (repeat) tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+          tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+          resolve(tex);
+        },
         undefined,
         () => { console.warn(`unit-viewer: texture not found — ${url}`); resolve(null); }
       );
     });
   }
 
-  function _onLoaded(fbx, textures) {
-    const model = fbx;
-    model.rotation.x = -Math.PI / 2;
+  function _onLoaded(fbx, unit, textures) {
+    _disposeModel();
 
-    const box0 = new THREE.Box3().setFromObject(model);
+    const model = fbx;
+    model.rotation.x = unit.rotationX ?? -Math.PI / 2;
+
+    // Hide hardpoints / flames before measuring so they don't skew framing
+    if (unit.hideMeshes) {
+      model.traverse((child) => { if (unit.hideMeshes.test(child.name)) child.visible = false; });
+    }
+
+    const box0 = _visibleBox(model);
     const span = box0.getSize(new THREE.Vector3());
     model.scale.setScalar(150 / Math.max(span.x, span.y, span.z));
 
-    const box1 = new THREE.Box3().setFromObject(model);
+    const box1 = _visibleBox(model);
     model.position.sub(box1.getCenter(new THREE.Vector3()));
 
     const modelH = box1.max.y - box1.min.y;
 
-    sharedMaterial = _buildMaterial(textures, config.mirror || false, config.emissiveIntensity);
+    const hullMaterial = _buildMaterial(textures, unit);
+    let sideMaterial   = null;
+    let glassMaterial  = null;
 
     model.traverse((child) => {
       if (!child.isMesh) return;
       child.castShadow    = true;
       child.receiveShadow = true;
-      child.material      = sharedMaterial;
+      if (unit.glassMeshes?.includes(child.name)) {
+        if (!glassMaterial) glassMaterial = _buildGlassMaterial();
+        child.material   = glassMaterial;
+        child.castShadow = false;
+      } else if (unit.doubleSided?.includes(child.name)) {
+        if (!sideMaterial) sideMaterial = _buildMaterial(textures, unit, THREE.DoubleSide);
+        child.material = sideMaterial;
+      } else {
+        child.material = hullMaterial;
+      }
     });
 
+    currentModel = model;
     scene.add(model);
-    camera.position.set(0, modelH * 0.3, modelH * 3.0);
+    const radius = _visibleBox(model).getBoundingSphere(new THREE.Sphere()).radius;
+    const fitDist = radius / Math.sin(THREE.MathUtils.degToRad(camera.fov / 2)) * 0.85;
+    const dist    = Math.max(modelH * 3.0, fitDist);
+    // Start from a three-quarter angle. viewAzimuth (degrees) is per unit
+    // because models face different axes; positive swings toward +X.
+    const az = THREE.MathUtils.degToRad(unit.viewAzimuth ?? 35);
+    camera.position.set(Math.sin(az) * dist, dist * 0.25, Math.cos(az) * dist);
     controls.target.set(0, 0, 0);
     controls.update();
 
-    if (config.defaultTint) {
+    if (config.defaultTint && !tintState.initialised) {
       const { hex, alpha } = config.defaultTint;
       tintState.hex   = hex;
       tintState.alpha = alpha;
-      _applyTint(hex, alpha / 255);
       _syncRgbaDisplay();
       _qA('[data-tint]').forEach(b => b.classList.remove('active'));
     }
+    if (!tintState.initialised) _notifyChange();
+    tintState.initialised = true;
+    _syncModeUI();
+    _applyTint(tintState.hex, tintState.alpha / 255);
 
+    _showLoading(false);
+  }
+
+  function _visibleBox(root) {
+    root.updateWorldMatrix(true, true);
+    const box = new THREE.Box3();
+    root.traverseVisible((child) => { if (child.isMesh) box.expandByObject(child); });
+    return box.isEmpty() ? new THREE.Box3().setFromObject(root) : box;
+  }
+
+  function _disposeModel() {
+    if (!currentModel) return;
+    scene.remove(currentModel);
+    const mats = new Set();
+    const texs = new Set();
+    currentModel.traverse((child) => {
+      if (!child.isMesh) return;
+      child.geometry?.dispose();
+      [].concat(child.material).forEach((m) => m && mats.add(m));
+    });
+    mats.forEach((m) => {
+      ['map', 'normalMap', 'emissiveMap', 'specularColorMap'].forEach((k) => m[k] && texs.add(m[k]));
+      if (m.userData.colorMask) texs.add(m.userData.colorMask);
+      m.dispose();
+    });
+    texs.forEach((t) => t.dispose());
+    currentModel = null;
+  }
+
+  function _showLoading(show) {
     const overlay = _q('[data-ctrl="loading"]');
-    if (overlay) {
+    if (!overlay) return;
+    if (show) {
+      overlay.style.display = '';
+      overlay.style.opacity = '1';
+    } else {
       overlay.style.opacity = '0';
-      overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
+      const hide = () => { if (overlay.style.opacity === '0') overlay.style.display = 'none'; };
+      overlay.addEventListener('transitionend', hide, { once: true });
+      setTimeout(hide, 800);
     }
   }
 
   /* ── Material ───────────────────────────────────────────────── */
-  function _buildMaterial({ diffuse, colorMask, normal, specular, emissive }, fixMirror = false, emissiveIntensity) {
-    const mat = new THREE.MeshStandardMaterial({
+  function _buildGlassMaterial() {
+    return new THREE.MeshPhysicalMaterial({
+      color:           0x0b1a1c,
+      metalness:       0.2,
+      roughness:       0.08,
+      transparent:     true,
+      opacity:         0.8,
+      clearcoat:       1.0,
+      envMapIntensity: 1.5,
+    });
+  }
+
+  function _buildMaterial({ diffuse, colorMask, normal, specular, emissive }, unit, side = THREE.FrontSide) {
+    const fixMirror = unit.mirror || false;
+    const params = {
       map:               diffuse  || null,
       normalMap:         normal   || null,
       emissiveMap:       emissive || null,
       emissive:          emissive ? new THREE.Color(0xffffff) : new THREE.Color(0x000000),
-      emissiveIntensity: emissive ? (emissiveIntensity ?? 0.15) : 0,
-      roughness:         0.75,
-      metalness:         0.0,
-    });
+      emissiveIntensity: emissive ? (unit.emissiveIntensity ?? 0.15) : 0,
+      roughness:         unit.roughness ?? 0.75,
+      metalness:         unit.metalness ?? 0.0,
+      side,
+    };
+
+    let mat;
+    if (unit.useSpecular && specular) {
+      // Blender wires _s into Principled "Specular IOR Level", where 0.5 is
+      // the default F0. specularColor ×2 maps a 0.5 texel back to default.
+      mat = new THREE.MeshPhysicalMaterial({
+        ...params,
+        specularColorMap:  specular,
+        specularColor:     new THREE.Color(2, 2, 2),
+        specularIntensity: 1.0,
+      });
+    } else {
+      mat = new THREE.MeshStandardMaterial(params);
+    }
 
     if (!colorMask && !fixMirror) return mat;
+    mat.userData.colorMask = colorMask;
 
     mat.onBeforeCompile = (shader) => {
       shader.uniforms.uFixMirror = { value: fixMirror ? 1.0 : 0.0 };
       if (colorMask) {
         shader.uniforms.tColorMask   = { value: colorMask };
-        shader.uniforms.uTintColor   = { value: new THREE.Vector3(1, 1, 1) };
-        shader.uniforms.uTintAlpha   = { value: 0.0 };
-        shader.uniforms.uGrungeBoost = { value: 1.0 };
+        shader.uniforms.uTintColor   = tintUniforms.uTintColor;
+        shader.uniforms.uTintAlpha   = tintUniforms.uTintAlpha;
+        shader.uniforms.uGrungeBoost = tintUniforms.uGrungeBoost;
       }
 
       shader.vertexShader = shader.vertexShader
@@ -248,9 +470,9 @@ vec4  _c     = texture2D(tColorMask, _fixUv(vColorMaskUv));
 vec3  grunge = pow(_c.rgb, vec3(uGrungeBoost));
 diffuseColor.rgb = mix(diffuseColor.rgb, grunge * uTintColor, _c.a * uTintAlpha);`);
       }
-
-      mat.userData.shader = shader;
     };
+    // Keep mirror / non-mirror variants from sharing a cached program
+    mat.customProgramCacheKey = () => `bzunit-${fixMirror ? 1 : 0}-${colorMask ? 1 : 0}`;
 
     return mat;
   }
@@ -264,39 +486,73 @@ diffuseColor.rgb = mix(diffuseColor.rgb, grunge * uTintColor, _c.a * uTintAlpha)
 
   /* ── Colour controls ────────────────────────────────────────── */
   function _notifyChange() {
+    if (tintState.alpha > 0) tintState.lastAlpha = tintState.alpha;
+    _syncModeUI();
     if (!config.onTintChange) return;
-    const col = new THREE.Color(tintState.hex);
-    config.onTintChange(
-      Math.round(col.r * 255),
-      Math.round(col.g * 255),
-      Math.round(col.b * 255),
-      tintState.alpha
-    );
+    const [r, g, b] = _hexToRgb(tintState.hex);
+    config.onTintChange(r, g, b, tintState.alpha);
   }
 
   function _applyGrungeBoost(value) {
-    const shader = sharedMaterial?.userData.shader;
-    if (!shader) return;
-    shader.uniforms.uGrungeBoost.value = value;
+    tintUniforms.uGrungeBoost.value = value;
   }
 
   function _applyTint(hex, alpha) {
-    const shader = sharedMaterial?.userData.shader;
-    if (!shader) return;
     const col = new THREE.Color(hex);
-    shader.uniforms.uTintColor.value.set(col.r, col.g, col.b);
-    shader.uniforms.uTintAlpha.value = alpha;
+    tintUniforms.uTintColor.value.set(col.r, col.g, col.b);
+    tintUniforms.uTintAlpha.value = alpha;
   }
 
   function _syncRgbaDisplay() {
-    const col = new THREE.Color(tintState.hex);
+    const [r, g, b] = _hexToRgb(tintState.hex);
     const _sv = (sel, v) => { const el = _q(sel); if (el) el.value = v; };
-    _sv('[data-ctrl="tint-r"]', Math.round(col.r * 255));
-    _sv('[data-ctrl="tint-g"]', Math.round(col.g * 255));
-    _sv('[data-ctrl="tint-b"]', Math.round(col.b * 255));
+    _sv('[data-ctrl="tint-r"]', r);
+    _sv('[data-ctrl="tint-g"]', g);
+    _sv('[data-ctrl="tint-b"]', b);
     _sv('[data-ctrl="tint-a"]', tintState.alpha);
     const picker = _q('[data-ctrl="tint-picker"]');
     if (picker) picker.value = tintState.hex;
+  }
+
+  // Hex → [r, g, b] in sRGB 0–255, i.e. exactly what the user picked.
+  function _hexToRgb(hex) {
+    const n = parseInt(hex.replace('#', ''), 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+
+  /* Stock / Team-colour toggle, status line and swatch highlight all
+     derive from tintState here, so every control path stays consistent. */
+  function _syncModeUI() {
+    const stock = tintState.alpha === 0;
+    _qA('[data-mode]').forEach((btn) => {
+      const on = (btn.dataset.mode === 'stock') === stock;
+      btn.classList.toggle('active', on);
+      btn.setAttribute('aria-pressed', String(on));
+    });
+    _qA('[data-tint]').forEach((btn) => {
+      btn.classList.toggle('active', !stock && btn.dataset.tint.toLowerCase() === tintState.hex.toLowerCase());
+    });
+    const wrap = _q('.tc-colour-controls');
+    if (wrap) wrap.classList.toggle('is-stock', stock);
+
+    const status = _q('[data-ctrl="tint-status"]');
+    if (status) {
+      if (stock) {
+        status.innerHTML = "<strong>Stock colors</strong> — the unit's original paint. Pick a color below to apply a team color.";
+      } else {
+        const [r, g, b] = _hexToRgb(tintState.hex);
+        const pct = Math.round(tintState.alpha / 255 * 100);
+        status.innerHTML = `<span class="tc-status-chip" style="background:${tintState.hex}"></span>`
+          + `<strong>Team color</strong> — ${r} ${g} ${b} at ${pct}% strength on the armor panels.`;
+      }
+    }
+  }
+
+  function _setStock(stock) {
+    tintState.alpha = stock ? 0 : (tintState.lastAlpha || 255);
+    _applyTint(tintState.hex, tintState.alpha / 255);
+    _syncRgbaDisplay();
+    _notifyChange();
   }
 
   function _rgbToHex(r, g, b) {
@@ -304,20 +560,18 @@ diffuseColor.rgb = mix(diffuseColor.rgb, grunge * uTintColor, _c.a * uTintAlpha)
   }
 
   function _initColourControls() {
+    // Stock colors / Team color toggle
+    _qA('[data-mode]').forEach((btn) => {
+      btn.addEventListener('click', () => _setStock(btn.dataset.mode === 'stock'));
+    });
+
     // Preset swatches
     _qA('[data-tint]').forEach((btn) => {
       btn.addEventListener('click', () => {
-        const val = btn.dataset.tint;
-        if (val === 'default') {
-          tintState.alpha = 0;
-        } else {
-          tintState.hex   = val;
-          tintState.alpha = 255;
-        }
+        tintState.hex   = btn.dataset.tint;
+        tintState.alpha = 255;
         _applyTint(tintState.hex, tintState.alpha / 255);
         _syncRgbaDisplay();
-        _qA('[data-tint]').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
         _notifyChange();
       });
     });
@@ -330,7 +584,6 @@ diffuseColor.rgb = mix(diffuseColor.rgb, grunge * uTintColor, _c.a * uTintAlpha)
         tintState.alpha = tintState.alpha === 0 ? 255 : tintState.alpha;
         _applyTint(tintState.hex, tintState.alpha / 255);
         _syncRgbaDisplay();
-        _qA('[data-tint]').forEach(b => b.classList.remove('active'));
         _notifyChange();
       });
     }
@@ -348,7 +601,8 @@ diffuseColor.rgb = mix(diffuseColor.rgb, grunge * uTintColor, _c.a * uTintAlpha)
         _applyTint(tintState.hex, tintState.alpha / 255);
         const pk = _q('[data-ctrl="tint-picker"]');
         if (pk) pk.value = tintState.hex;
-        _qA('[data-tint]').forEach(b => b.classList.remove('active'));
+        const ai = _q('[data-ctrl="tint-a"]');
+        if (ai) ai.value = tintState.alpha;
         _notifyChange();
       });
     });
@@ -359,11 +613,6 @@ diffuseColor.rgb = mix(diffuseColor.rgb, grunge * uTintColor, _c.a * uTintAlpha)
       alphaInput.addEventListener('input', () => {
         tintState.alpha = Math.max(0, Math.min(255, parseInt(alphaInput.value) || 0));
         _applyTint(tintState.hex, tintState.alpha / 255);
-        if (tintState.alpha === 0) {
-          _qA('[data-tint]').forEach(b => b.classList.remove('active'));
-          const defBtn = _q('[data-tint="default"]');
-          if (defBtn) defBtn.classList.add('active');
-        }
         _notifyChange();
       });
     }
@@ -371,13 +620,33 @@ diffuseColor.rgb = mix(diffuseColor.rgb, grunge * uTintColor, _c.a * uTintAlpha)
     // Grunge slider
     const grungeSlider = _q('[data-ctrl="grunge-slider"]');
     if (grungeSlider) {
-      grungeSlider.addEventListener('input', () => _applyGrungeBoost(parseFloat(grungeSlider.value)));
+      grungeSlider.addEventListener('input', () => {
+        _applyGrungeBoost(parseFloat(grungeSlider.value));
+        _sliderReadout(grungeSlider);
+      });
+      _sliderReadout(grungeSlider);
     }
 
     // Day/Night slider
     const timeSlider = _q('[data-ctrl="time-slider"]');
     if (timeSlider) {
-      timeSlider.addEventListener('input', () => _setTimeOfDay(timeSlider.value / 100));
+      timeSlider.addEventListener('input', () => {
+        _setTimeOfDay(timeSlider.value / 100);
+        _sliderReadout(timeSlider);
+      });
+      _sliderReadout(timeSlider);
+    }
+  }
+
+  // Text readout next to each slider (element: [data-readout="<slider ctrl>"])
+  function _sliderReadout(slider) {
+    const out = _q(`[data-readout="${slider.dataset.ctrl}"]`);
+    if (!out) return;
+    const v = parseFloat(slider.value);
+    if (slider.dataset.ctrl === 'grunge-slider') {
+      out.textContent = v <= 1.0001 ? 'Off' : `${Math.round((v - 1) / 3 * 100)}%`;
+    } else {
+      out.textContent = v < 25 ? 'Night' : v < 60 ? 'Dusk' : 'Day';
     }
   }
 
@@ -410,14 +679,13 @@ diffuseColor.rgb = mix(diffuseColor.rgb, grunge * uTintColor, _c.a * uTintAlpha)
 
   /* ── Public API ─────────────────────────────────────────────── */
   return {
+    /** Swap to a different unit model, keeping the current team colour. */
+    setUnit(unit) {
+      if (!renderer) return Promise.resolve();
+      return _loadAssets(unit);
+    },
     getTintRgba() {
-      const col = new THREE.Color(tintState.hex);
-      return [
-        Math.round(col.r * 255),
-        Math.round(col.g * 255),
-        Math.round(col.b * 255),
-        tintState.alpha,
-      ];
+      return [..._hexToRgb(tintState.hex), tintState.alpha];
     },
   };
 }

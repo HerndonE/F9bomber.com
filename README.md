@@ -12,14 +12,19 @@ Live at [f9bomber.com](https://f9bomber.com)
 Landing page with pilot dossier, social links, and navigation. Includes links to YouTube, Instagram, Steam Workshop, Battlezone Discord servers, bz2stats.us, and Buy Me a Coffee.
 
 ### Team Color Selector (`teamcolors.html`)
-Interactive tool for previewing and exporting ISDF Scout team colors without launching the game.
+Interactive tool for previewing and exporting team colors without launching the game.
 
-- Two side-by-side Three.js viewers (Team A / Team B)
-- 13 preset color swatches per viewer plus a free color picker and RGBA inputs
-- Grunge boost slider and day/night lighting slider per viewer
+- Two side-by-side Three.js viewers (Team A / Team B), each with its own unit:
+  - **ISDF Scout** and **Scion Scout** (stock factions)
+  - **Hadean Xypos** (expanded-universe faction from community mods such as Forgotten Enemies: Remastered and VSR, marked *Mod* on the page)
+- Faction logo and stock / expanded-universe tag per team
+- **Stock colors / Team color** toggle, 12 presets, a custom color picker and RGBA fine-tune inputs
+- Labelled preview sliders: Grunge (clean ↔ worn) and Lighting (night ↔ day); they don't affect the export
+- Full-screen mode on desktop, with the color controls beside the enlarged view
 - Live `LocalPrefs.ini` output — copy the two lines directly into your config
 - Team A applies to in-game teams 1–5; Team B applies to teams 6–10
 - Links to the required Steam Workshop mods (Color Selector Config + Asset)
+- Shareable unit selection via URL, e.g. `teamcolors.html?a=isdf&b=hadean`
 
 ---
 
@@ -33,11 +38,13 @@ F9bomber.com/
 │   └── style.css           # Global styles (black + amber design system)
 ├── js/
 │   ├── main.js             # Scroll spy, navbar, shared utilities
-│   ├── teamcolors.js       # Boots Team A / Team B viewer instances
+│   ├── teamcolors.js       # Unit catalogue + boots Team A / Team B viewers
 │   └── unit-viewer.js      # Instance-based Three.js viewer (closure per call)
 ├── models/
-│   └── isdf/Scout/         # ISDF Scout FBX + PBR textures
-└── img/                    # Site images and avatar
+│   ├── isdf/Scout/         # ISDF Scout FBX + textures
+│   ├── scion/scout/        # Scion Scout FBX + textures (+ reference .blend)
+│   └── hadean/xypos/       # Hadean Xypos FBX + textures
+└── img/                    # Site images, avatar, Factions/ logos
 ```
 
 ---
@@ -60,6 +67,17 @@ The viewer replicates Battlezone: Combat Commander's team color system using a c
 - `_c` texture RGB = tint template / grunge
 - Blend: `mix(diffuse, pow(_c.rgb, boost) * teamColor, mask)`
 - Team color values are literal 0–1 multipliers matching the game's 0–255 spec
+
+### Adding a unit
+
+Add one entry to `UNITS` in `js/teamcolors.js` (faction, name, logo, `origin: 'stock' | 'expanded'`, model, textures). The team switchers, logos and tags are built from that list. Per-unit options handled by `unit-viewer.js`:
+
+- `wrap: 'repeat'` — for models whose UVs extend past 0–1 (Scion Scout, Hadean Xypos)
+- `rotationX` — `0` for Y-up FBX files
+- `hideMeshes` — e.g. `/^(hp_|flame)/` to hide hardpoint helpers and flames
+- `glassMeshes`, `doubleSided`, `metalness`, `roughness`, `useSpecular`, `emissiveIntensity`
+
+Each unit's in-game `.material` file lists the textures the game actually uses (diffuse, teamColor `_c`, emissive `_e`, normal `_n`, specular `_s`).
 
 ---
 
